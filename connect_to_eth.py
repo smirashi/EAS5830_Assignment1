@@ -26,12 +26,19 @@ def connect_with_middleware(contract_json):
 
 	# TODO complete this method
 	# The first section will be the same as "connect_to_eth()" but with a BNB url
-	w3 = 0
+        url = "wss://bsc-testnet.drpc.org"  # FILL THIS IN
+	w3 = Web3(HTTPProvider(url))
+	assert w3.is_connected(), f"Failed to connect to provider at {url}"
 
 	# The second section requires you to inject middleware into your w3 object and
 	# create a contract object. Read more on the docs pages at https://web3py.readthedocs.io/en/stable/middleware.html
 	# and https://web3py.readthedocs.io/en/stable/web3.contract.html
-	contract = 0
+
+        # Inject middleware for BNB testnet compatibility
+	w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+
+	# Create contract object
+        contract = w3.eth.contract(address=Web3.to_checksum_address(address), abi=abi)
 
 	return w3, contract
 
