@@ -59,15 +59,18 @@ def is_ordered_block(w3, block_num):
 	"""
 	block = w3.eth.get_block(block_num, full_transactions=True)
 	ordered = False
+	base_fee = block.get("baseFeePerGas", 0)
 
 	# TODO YOUR CODE HERE
 	transactions = []
 	for tx in block.transactions:
-		if hasattr(tx, "maxPriorityFeePerGas") and hasattr(tx, "maxFeePerGas"):  # Type 2 transaction
+		if hasattr(tx, "maxPriorityFeePerGas") and hasattr(tx, "maxFeePerGas"): # Type 2 transaction
 			priority_fee = min(tx.maxPriorityFeePerGas, tx.maxFeePerGas - base_fee)
-		else:  # Type 0 transaction
+		elif hasattr(tx, "gasPrice"): # Type 0 transaction
 			priority_fee = tx.gasPrice - base_fee
-
+		else:
+			continue  # Skip if transaction fee data is missing
+            
 		transactions.append(priority_fee)
 
 	if transactions == sorted(transactions, reverse=True):
