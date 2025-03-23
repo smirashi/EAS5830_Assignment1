@@ -20,7 +20,7 @@ provider = HTTPProvider(api_url)
 web3 = Web3(provider)
 
 # Ensure the connection to Ethereum node is established
-if not web3.is_Connected():
+if not web3.is_connected():
     raise Exception("Failed to connect to Ethereum node.")
 
 # Connect to the Bored Ape Yacht Club contract
