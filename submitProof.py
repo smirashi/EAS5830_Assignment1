@@ -107,13 +107,12 @@ def prove_merkle(merkle_tree, random_indx):
         returns a proof of inclusion as list of values
     """
     merkle_proof = []
-    index = random_indx
     # TODO YOUR CODE HERE
     for level in merkle_tree[:-1]:  # don't include the root level
-        sibling_index = index ^ 1  # XOR to get sibling
+        sibling_index = random_indx ^ 1  # XOR to get sibling
         if sibling_index < len(level):
             merkle_proof.append(level[sibling_index])
-        index = index // 2
+        random_indx = random_indx // 2
     return merkle_proof
 
 
