@@ -66,7 +66,7 @@ contract Destination is AccessControl {
     		BridgeToken(_wrapped_token).burnFrom(msg.sender, _amount);
 
     		// Emit the Unwrap event
-    		emit Unwrap(_wrapped_token, underlyingToken, _recipient, _amount);
+    		emit Unwrap(_wrapped_token, underlyingToken, _recipient, _amount, block.timestamp);
     
 	}
 
