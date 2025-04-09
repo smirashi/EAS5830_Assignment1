@@ -44,7 +44,6 @@ contract Destination is AccessControl {
 	function wrap(address _underlying_token, address _recipient, uint256 _amount ) public onlyRole(WARDEN_ROLE) {
 		//YOUR CODE HERE
     address wrapped = underlying_tokens[_underlying_token];
-        address wrapped = underlying_tokens[_underlying_token];
     require(wrapped != address(0), "Wrapped token not registered");
 
     // Transfer original tokens from user to contract
