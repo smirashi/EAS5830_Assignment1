@@ -12,9 +12,9 @@ contract Destination is AccessControl {
 	mapping( address => address) public wrapped_tokens;
 	address[] public tokens;
 
-	event Creation( address indexed underlying_token, address indexed wrapped_token );
 	event Wrap( address indexed underlying_token, address indexed wrapped_token, address indexed to, uint256 amount );
 	event Unwrap( address indexed underlying_token, address indexed wrapped_token, address frm, address indexed to, uint256 amount );
+	event Creation( address indexed underlying_token, address indexed wrapped_token );
 
     constructor( address admin ) {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
