@@ -44,35 +44,30 @@ contract Destination is AccessControl {
 
 	function wrap(address _underlying_token, address _recipient, uint256 _amount ) public onlyRole(WARDEN_ROLE) {
 		//YOUR CODE HERE
-    // Ensure the underlying token is registered
-       address wrappedToken = wrapped_tokens[_underlying_token];
-       require(wrappedToken != address(0), "Wrapped token does not exist");
+		// Get the wrapped token for the underlying token
+    		address wrappedToken = wrapped_tokens[_underlying_token];
+    		require(wrappedToken != address(0), "Wrapped token not registered");
 
-       // Transfer the underlying token to this contract
-       ERC20 underlyingERC20 = ERC20(_underlying_token);
-       underlyingERC20.transferFrom(msg.sender, address(this), _amount);
+    		// Mint the wrapped tokens to the recipient
+    		BridgeToken(wrappedToken).mint(_recipient, _amount);
 
-       // Mint the wrapped token for the recipient
-       BridgeToken(wrappedToken).mint(_recipient, _amount);
-
-       // Emit the Wrap event
-       emit Wrap(_underlying_token, wrappedToken, _recipient, _amount);
+    		// Emit the Wrap event
+    		emit Wrap(_underlying_token, wrappedToken, _recipient, _amount);
+    
 	}
 
 	function unwrap(address _wrapped_token, address _recipient, uint256 _amount ) public {
 		//YOUR CODE HERE
-    // Ensure the wrapped token is registered
-       address underlyingToken = underlying_tokens[_wrapped_token];
-       require(underlyingToken != address(0), "Underlying token does not exist");
+		// Get the underlying token for the wrapped token
+    		address underlyingToken = underlying_tokens[_wrapped_token];
+    		require(underlyingToken != address(0), "Underlying token not registered");
 
-       // Transfer the wrapped token from the sender
-       BridgeToken(_wrapped_token).burnFrom(msg.sender, _amount);
+    		// Burn the wrapped tokens from the caller's address
+    		BridgeToken(_wrapped_token).burnFrom(msg.sender, _amount);
 
-       // Transfer the underlying token to the recipient
-       ERC20(underlyingToken).transfer(_recipient, _amount);
-
-       // Emit the Unwrap event
-       emit Unwrap(underlyingToken, _wrapped_token, msg.sender, _recipient, _amount);
+    		// Emit the Unwrap event
+    		emit Unwrap(_wrapped_token, underlyingToken, _recipient, _amount);
+    
 	}
 
 }
