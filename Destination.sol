@@ -53,7 +53,7 @@ contract Destination is AccessControl {
 
     BridgeToken(wrapped).mint(_recipient, _amount);
 
-    emit Wrapped(_underlying_token, wrapped, _recipient, _amount);
+    emit Wrap(_underlying_token, wrapped_token, _recipient, _amount);
 	}
 
 	function unwrap(address _wrapped_token, address _recipient, uint256 _amount ) public {
@@ -68,7 +68,7 @@ contract Destination is AccessControl {
         "Transfer failed"
     );
 
-    emit Unwrapped(_wrapped_token, underlying, _recipient, _amount);
+    emit Unwrap(_wrapped_token, underlying, _recipient, _amount);
 	}
 
 }
