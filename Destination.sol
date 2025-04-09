@@ -14,7 +14,7 @@ contract Destination is AccessControl {
 
 	event Wrap( address indexed underlying_token, address indexed wrapped_token, address indexed to, uint256 amount );
 	event Unwrap( address indexed underlying_token, address indexed wrapped_token, address frm, address indexed to, uint256 amount );
-  event Creation( address indexed underlying_token, address indexed wrapped_token );
+	event Creation( address indexed underlying_token, address indexed wrapped_token );
 
     constructor( address admin ) {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
@@ -28,16 +28,18 @@ contract Destination is AccessControl {
 
     BridgeToken newToken = new BridgeToken(_underlying_token, name, symbol, address(this));
     newToken.grantRole(newToken.MINTER_ROLE(), address(this));
+
     address newTokenAddress = address(newToken);
+
     underlying_tokens[_underlying_token] = newTokenAddress;
     wrapped_tokens[newTokenAddress] = _underlying_token;
     tokens.push(newTokenAddress);
 
     emit Creation(_underlying_token, newTokenAddress);
     return newTokenAddress;
-	}
+}
 
-	function wrap(address _underlying_token, address _recipient, uint256 _amount ) public onlyRole(WARDEN_ROLE) {
+function wrap(address _underlying_token, address _recipient, uint256 _amount ) public onlyRole(WARDEN_ROLE) {
 		//YOUR CODE HERE
     address wrapped = underlying_tokens[_underlying_token];
     require(wrapped != address(0), "Token not registered");
@@ -46,16 +48,16 @@ contract Destination is AccessControl {
     bridgeToken.mint(_recipient, _amount);
 
     emit Wrap(_underlying_token, wrapped, _recipient, _amount);
-	}
+}
 
-	function unwrap(address _wrapped_token, address _recipient, uint256 _amount ) public {
+function unwrap(address _wrapped_token, address _recipient, uint256 _amount ) public {
 		//YOUR CODE HERE
-    require(wrapped_tokens[_wrapped_token] != address(0), "Wrapped token not registered");
+    address underlying = wrapped_tokens[_wrapped_token];
+    require(underlying != address(0), "Token not registered");
 
     BridgeToken bridgeToken = BridgeToken(_wrapped_token);
     bridgeToken.burnFrom(msg.sender, _amount);
 
-    address underlying = wrapped_tokens[_wrapped_token];
     emit Unwrap(underlying, _wrapped_token, msg.sender, _recipient, _amount);
 	}
 
