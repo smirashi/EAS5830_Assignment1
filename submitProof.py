@@ -25,7 +25,7 @@ def merkle_assignment():
     tree = build_merkle(leaves)
 
     # Select a random leaf and create a proof for that leaf
-    random_leaf_index = random.randint(1, len(leaves) - 1) #TODO generate a random index from primes to claim (0 is already claimed)
+    random_leaf_index = random.randint(1, num_of_primes - 1) #TODO generate a random index from primes to claim (0 is already claimed)
     proof = prove_merkle(tree, random_leaf_index)
 
     # This is the same way the grader generates a challenge for sign_challenge()
@@ -150,6 +150,13 @@ def send_signed_msg(proof, random_leaf):
 
     # TODO YOUR CODE HERE
     contract = w3.eth.contract(address=address, abi=abi)
+
+    # VALIDATE inputs
+    assert isinstance(random_leaf, (bytes, bytearray)) and len(random_leaf) == 32, \
+        f"Invalid leaf format: {random_leaf}"
+    for i, p in enumerate(proof):
+        assert isinstance(p, (bytes, bytearray)) and len(p) == 32, \
+            f"Invalid proof item at index {i}: {p}"
 
     # Prepare the transaction
     nonce = w3.eth.get_transaction_count(acct.address)
