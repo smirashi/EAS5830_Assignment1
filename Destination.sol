@@ -27,7 +27,8 @@ contract Destination is AccessControl {
     address wrapped = underlying_tokens[_underlying_token];
         require(wrapped != address(0), "Token not registered");
 
-        BridgeToken(wrapped).mint(_recipient, _amount);
+        BridgeToken token = BridgeToken(wrapped);
+        token.mint(_recipient, _amount);
 
         emit Wrap(_underlying_token, wrapped, _recipient, _amount);
 	}
@@ -45,7 +46,7 @@ contract Destination is AccessControl {
             "Insufficient balance to unwrap"
         );
 
-        token.burn(msg.sender, _amount);
+        token.burnFrom(msg.sender, _amount);
 
         emit Unwrap(
             wrapped_tokens[_wrapped_token],
@@ -63,7 +64,7 @@ contract Destination is AccessControl {
             "Token already registered"
         );
 
-        BridgeToken newToken = new BridgeToken(name, symbol, _underlying_token);
+        BridgeToken newToken = new BridgeToken(_underlying_token, name, symbol, address(this));
         address wrappedAddr = address(newToken);
 
         underlying_tokens[_underlying_token] = wrappedAddr;
