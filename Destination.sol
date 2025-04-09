@@ -24,54 +24,41 @@ contract Destination is AccessControl {
 
 	function wrap(address _underlying_token, address _recipient, uint256 _amount ) public onlyRole(WARDEN_ROLE) {
 		//YOUR CODE HERE
-    address wrapped = underlying_tokens[_underlying_token];
-        require(wrapped != address(0), "Token not registered");
-
-        BridgeToken token = BridgeToken(wrapped);
-        token.mint(_recipient, _amount);
-
-        emit Wrap(_underlying_token, wrapped, _recipient, _amount);
+		address wrapped = underlying_tokens[_underlying_token];
+		require(wrapped != address(0), "Token not registered");
+		
+		IERC20(_underlying_token).transferFrom(msg.sender, address(this), _amount);
+		BridgeToken(wrapped).mint(msg.sender, _amount);
 	}
 
 	function unwrap(address _wrapped_token, address _recipient, uint256 _amount ) public {
 		//YOUR CODE HERE
-    require(
-            wrapped_tokens[_wrapped_token] != address(0),
-            "Wrapped token not recognized"
-        );
+		address underlying = wrapped_tokens[_wrapped_token];
+    		require(underlying != address(0), "Token not registered");
 
-        BridgeToken token = BridgeToken(_wrapped_token);
-        require(
-            token.balanceOf(msg.sender) >= _amount,
-            "Insufficient balance to unwrap"
-        );
+    		// Burn the wrapped tokens from the user
+   		BridgeToken(_wrapped_token).burnFrom(msg.sender, _amount);
 
-        token.burnFrom(msg.sender, _amount);
-
-        emit Unwrap(
-            wrapped_tokens[_wrapped_token],
-            _wrapped_token,
-            msg.sender,
-            _recipient,
-            _amount
-        );
+    		// Transfer back the underlying tokens
+    		IERC20(underlying).transfer(msg.sender, _amount);
 	}
 
 	function createToken(address _underlying_token, string memory name, string memory symbol ) public onlyRole(CREATOR_ROLE) returns(address) {
 		//YOUR CODE HERE
-		require(_underlying_token != address(0), "Invalid underlying token");
-    require(underlying_tokens[_underlying_token] == address(0), "Already exists");
+		require(underlying_tokens[_underlying_token] == address(0), "Token already created");
 
-    BridgeToken newToken = new BridgeToken(_underlying_token, name, symbol, address(this));
-    address wrappedAddr = address(newToken);
+		BridgeToken newToken = new BridgeToken(
+        		_underlying_token,
+        		name,
+        		symbol,
+        		address(this) // this contract is the admin (has MINTER_ROLE)
+    		);
 
-    underlying_tokens[_underlying_token] = wrappedAddr;
-    wrapped_tokens[wrappedAddr] = _underlying_token;
-    tokens.push(wrappedAddr);
+		// Save mappings both ways
+    		wrapped_tokens[address(newToken)] = _underlying_token;
+    		underlying_tokens[_underlying_token] = address(newToken);
 
-    emit Creation(_underlying_token, wrappedAddr);
-    return wrappedAddr;
-    
+    		return address(newToken);
 	}
 
 }
