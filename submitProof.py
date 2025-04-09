@@ -144,20 +144,12 @@ def send_signed_msg(proof, random_leaf):
         on the contract
     """
     chain = 'bsc'
-
     acct = get_account()
     address, abi = get_contract_info(chain)
     w3 = connect_to(chain)
 
     # TODO YOUR CODE HERE
     contract = w3.eth.contract(address=address, abi=abi)
-
-    # VALIDATE inputs
-    assert isinstance(random_leaf, (bytes, bytearray)) and len(random_leaf) == 32, \
-        f"Invalid leaf format: {random_leaf}"
-    for i, p in enumerate(proof):
-        assert isinstance(p, (bytes, bytearray)) and len(p) == 32, \
-            f"Invalid proof item at index {i}: {p}"
 
     # Prepare the transaction
     nonce = w3.eth.get_transaction_count(acct.address)
@@ -171,8 +163,14 @@ def send_signed_msg(proof, random_leaf):
 
     # Sign and send the transaction
     signed_tx = Account.sign_transaction(tx, acct.key)
-    tx_hash = w3.eth.send_raw_transaction(signed_tx['rawTransaction'])
+    
+    try:
+        raw_tx = signed_tx.rawTransaction
+    except AttributeError:
+        raw_tx = signed_tx['rawTransaction']
 
+    tx_hash = w3.eth.send_raw_transaction(raw_tx)
+    
     return tx_hash.hex()
 
 
