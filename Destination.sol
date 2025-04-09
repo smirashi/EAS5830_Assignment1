@@ -1,0 +1,78 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.17;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "./BridgeToken.sol";
+
+contract Destination is AccessControl {
+    bytes32 public constant WARDEN_ROLE = keccak256("BRIDGE_WARDEN_ROLE");
+    bytes32 public constant CREATOR_ROLE = keccak256("CREATOR_ROLE");
+	mapping( address => address) public underlying_tokens;
+	mapping( address => address) public wrapped_tokens;
+	address[] public tokens;
+
+	event Wrap( address indexed underlying_token, address indexed wrapped_token, address indexed to, uint256 amount );
+	event Unwrap( address indexed underlying_token, address indexed wrapped_token, address frm, address indexed to, uint256 amount );
+  event Creation( address indexed underlying_token, address indexed wrapped_token );
+
+    constructor( address admin ) {
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
+        _grantRole(CREATOR_ROLE, admin);
+        _grantRole(WARDEN_ROLE, admin);
+    }
+
+  function createToken(address _underlying_token, string memory name, string memory symbol ) public onlyRole(CREATOR_ROLE) returns(address) {
+		//YOUR CODE HERE
+    require(_underlying_token != address(0), "Invalid underlying token address");
+
+       // Ensure that the token doesn't already exist
+       require(wrapped_tokens[_underlying_token] == address(0), "Wrapped token already exists");
+
+       // Deploy a new BridgeToken with the given parameters
+       BridgeToken bridgeToken = new BridgeToken(_underlying_token, name, symbol, msg.sender);
+
+       // Map the underlying token to the new wrapped token
+       underlying_tokens[address(bridgeToken)] = _underlying_token;
+       wrapped_tokens[_underlying_token] = address(bridgeToken);
+       
+       // Emit the Creation event
+       emit Creation(_underlying_token, address(bridgeToken));
+
+       return address(bridgeToken);
+	}
+
+	function wrap(address _underlying_token, address _recipient, uint256 _amount ) public onlyRole(WARDEN_ROLE) {
+		//YOUR CODE HERE
+    // Ensure the underlying token is registered
+       address wrappedToken = wrapped_tokens[_underlying_token];
+       require(wrappedToken != address(0), "Wrapped token does not exist");
+
+       // Transfer the underlying token to this contract
+       ERC20 underlyingERC20 = ERC20(_underlying_token);
+       underlyingERC20.transferFrom(msg.sender, address(this), _amount);
+
+       // Mint the wrapped token for the recipient
+       BridgeToken(wrappedToken).mint(_recipient, _amount);
+
+       // Emit the Wrap event
+       emit Wrap(_underlying_token, wrappedToken, _recipient, _amount);
+	}
+
+	function unwrap(address _wrapped_token, address _recipient, uint256 _amount ) public {
+		//YOUR CODE HERE
+    // Ensure the wrapped token is registered
+       address underlyingToken = underlying_tokens[_wrapped_token];
+       require(underlyingToken != address(0), "Underlying token does not exist");
+
+       // Transfer the wrapped token from the sender
+       BridgeToken(_wrapped_token).burnFrom(msg.sender, _amount);
+
+       // Transfer the underlying token to the recipient
+       ERC20(underlyingToken).transfer(_recipient, _amount);
+
+       // Emit the Unwrap event
+       emit Unwrap(underlyingToken, _wrapped_token, msg.sender, _recipient, _amount);
+	}
+
+}
