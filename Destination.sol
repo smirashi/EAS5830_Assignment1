@@ -25,7 +25,12 @@ contract Destination is AccessControl {
   function createToken(address _underlying_token, string memory name, string memory symbol ) public onlyRole(CREATOR_ROLE) returns(address) {
 		//YOUR CODE HERE
     require(underlying_tokens[_underlying_token] == address(0), "Token already created");
-    BridgeToken newToken = new BridgeToken(name, symbol);
+    BridgeToken newToken = new BridgeToken(
+        _underlying_token,
+        name,
+        symbol,
+        getRoleMember(DEFAULT_ADMIN_ROLE, 0)  // admin address
+    );
     address wtoken = address(newToken);
 
     underlying_tokens[_underlying_token] = wtoken;
