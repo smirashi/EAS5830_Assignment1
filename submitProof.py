@@ -165,9 +165,9 @@ def send_signed_msg(proof, random_leaf):
     signed_tx = Account.sign_transaction(tx, acct.key)
     
     try:
-        raw_tx = signed_tx.rawTransaction
+        raw_tx = signed_tx.raw_transaction
     except AttributeError:
-        raw_tx = signed_tx['rawTransaction']
+        raw_tx = signed_tx['raw_transaction']
 
     tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
     
