@@ -4,8 +4,7 @@ from web3.middleware import ExtraDataToPOAMiddleware #Necessary for POA chains
 from datetime import datetime
 import json
 import pandas as pd
-import os
-
+from eth_account import Account
 
 def connect_to(chain):
     if chain == 'source':  # The source contract chain is avax
@@ -21,104 +20,21 @@ def connect_to(chain):
     return w3
 
 
-def get_contract_info(chain, contract_info):
+def get_contract_info(chain, contract_info_file="contract_info.json"):
     """
         Load the contract_info file into a dictionary
         This function is used by the autograder and will likely be useful to you
     """
     try:
-        with open(contract_info, 'r')  as f:
+        with open(contract_info_file, 'r')  as f:
             contracts = json.load(f)
     except Exception as e:
         print( f"Failed to read contract info\nPlease contact your instructor\n{e}" )
-        return 0
+        return None
     return contracts[chain]
 
 
-# def scan_blocks(chain, contract_info="contract_info.json"):
-#     """
-#         chain - (string) should be either "source" or "destination"
-#         Scan the last 5 blocks of the source and destination chains
-#         Look for 'Deposit' events on the source chain and 'Unwrap' events on the destination chain
-#         When Deposit events are found on the source chain, call the 'wrap' function the destination chain
-#         When Unwrap events are found on the destination chain, call the 'withdraw' function on the source chain
-#     """
-
-#     # This is different from Bridge IV where chain was "avax" or "bsc"
-#     if chain not in ['source','destination']:
-#         print( f"Invalid chain: {chain}" )
-#         return 0
-    
-#         #YOUR CODE HERE
-#     contracts_info = get_contract_info(chain, contract_info)
-#     w3 = connect_to(chain)
-#     contract_address = w3.to_checksum_address(contracts_info['address'])
-#     abi = contracts_info['abi']
-#     contract = w3.eth.contract(address=contract_address, abi=abi)
-
-#     if chain == 'source':
-#         other_chain = 'destination'
-#         event_name = 'Deposit'
-#         function_name = 'wrap'
-#     elif chain == 'destination':
-#         other_chain = 'source'
-#         event_name = 'Unwrap'
-#         function_name = 'withdraw'
-
-#     other_contracts_info = get_contract_info(other_chain, contract_info)
-#     w3_other = connect_to(other_chain)
-#     other_contract_address = w3_other.to_checksum_address(other_contracts_info['address'])
-#     other_contract_abi = other_contracts_info['abi']
-#     other_contract = w3_other.eth.contract(address=other_contract_address, abi=other_contract_abi)
-
-#     # deployer_key = os.environ.get('cf60bcbd511f92e9d4104b8116483e2496ed8456f0152e854b15346b227ebd2b')
-#     deployer_key = 'cf60bcbd511f92e9d4104b8116483e2496ed8456f0152e854b15346b227ebd2b'
-#     if not deployer_key:
-#         print("Error: DEPLOYER_PRIVATE_KEY environment variable not set.")
-#         return
-
-#     deployer_account = w3.eth.account.from_key(deployer_key)
-
-#     latest_block = w3.eth.block_number
-#     start_block = max(0, latest_block - 5)
-
-#     events = contract.events[event_name].get_logs(fromBlock=start_block, toBlock='latest')
-
-#     for event in events:
-#         print(f"Found {event_name} event on {chain}: {event.args}")
-#         if chain == 'source' and event_name == 'Deposit':
-#             token_address = event.args.erc20
-#             amount = event.args.amount
-#             recipient = event.args.recipient
-#             try:
-#                 tx = other_contract.functions.wrap(token_address, amount, recipient).build_transaction({
-#                     'gas': 200000,
-#                     'gasPrice': w3_other.eth.gas_price,
-#                     'nonce': w3_other.eth.get_transaction_count(deployer_account.address),
-#                 })
-#                 signed_tx = w3_other.eth.account.sign_transaction(tx, deployer_key)
-#                 tx_hash = w3_other.eth.send_raw_transaction(signed_tx.rawTransaction)
-#                 print(f"Called wrap on {other_chain}. Transaction hash: {tx_hash.hex()}")
-#             except Exception as e:
-#                 print(f"Error calling wrap: {e}")
-#         elif chain == 'destination' and event_name == 'Unwrap':
-#             token_address = event.args.erc20;
-#             amount = event.args.amount
-#             recipient = event.args.recipient
-#             try:
-#                 tx = contract.functions.withdraw(token_address, amount, recipient).build_transaction({
-#                     'gas': 200000,
-#                     'gasPrice': w3.eth.gas_price,
-#                     'nonce': w3.eth.get_transaction_count(deployer_account.address),
-#                 })
-#                 signed_tx = w3.eth.account.sign_transaction(tx, deployer_key)
-#                 tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-#                 print(f"Called withdraw on {other_chain}. Transaction hash: {tx_hash.hex()}")
-#             except Exception as e:
-#                 print(f"Error calling withdraw: {e}")
-
-
-def scan_blocks(chain, contract_info="contract_info.json"):
+def scan_blocks(chain, contract_info_file="contract_info.json"):
     """
         chain - (string) should be either "source" or "destination"
         Scan the last 5 blocks of the source and destination chains
@@ -127,79 +43,85 @@ def scan_blocks(chain, contract_info="contract_info.json"):
         When Unwrap events are found on the destination chain, call the 'withdraw' function on the source chain
     """
 
-    if chain not in ['source', 'destination']:
-        print(f"Invalid chain: {chain}")
-        return 0
-
-    contracts_info = get_contract_info(chain, contract_info)
-    w3 = connect_to(chain)
-    contract_address = w3.to_checksum_address(contracts_info['address'])
-    abi = contracts_info['abi']
-    contract = w3.eth.contract(address=contract_address, abi=abi)
-
-    if chain == 'source':
-        other_chain = 'destination'
-        event_name = 'Deposit'
-        function_name = 'wrap'
-    elif chain == 'destination':
-        other_chain = 'source'
-        event_name = 'Unwrap'
-        function_name = 'withdraw'
-
-    other_contracts_info = get_contract_info(other_chain, contract_info)
-    w3_other = connect_to(other_chain)
-    other_contract_address = w3_other.to_checksum_address(other_contracts_info['address'])
-    other_contract_abi = other_contracts_info['abi']
-    other_contract = w3_other.eth.contract(address=other_contract_address, abi=other_contract_abi)
-
-    deployer_key = 'cf60bcbd511f92e9d4104b8116483e2496ed8456f0152e854b15346b227ebd2b'
-    if not deployer_key:
-        print("Error: DEPLOYER_PRIVATE_KEY environment variable not set.")
+    # This is different from Bridge IV where chain was "avax" or "bsc"
+    if chain not in ['source','destination']:
+        print( f"Invalid chain: {chain}" )
         return
 
-    deployer_account = w3.eth.account.from_key(deployer_key)
+    contracts = get_contract_info(chain, contract_info_file)
+    if not contracts:
+        return
 
-    latest_block = w3.eth.block_number
-    start_block = max(0, latest_block - 5)
+    w3 = connect_to(chain)
+    if not w3.is_connected():
+        print(f"Failed to connect to {chain} chain.")
+        return
 
     if chain == 'source':
-        block_filter = {
-            'fromBlock': start_block,
-            'toBlock': latest_block
-        }
-    events = contract.events[event_name].get_logs(block_filter)
-    else:  # For 'destination' chain (BSC testnet), keep the original way
-        events = contract.events[event_name].get_logs(fromBlock=start_block, toBlock='latest')
+        contract_address = contracts['address']
+        abi = contracts['abi']
+        event_name = 'Deposit'
+        other_chain = 'destination'
+        call_function = 'wrap'
+        arg_names = ['token', 'recipient', 'amount']
+    elif chain == 'destination':
+        contract_address = contracts['address']
+        abi = contracts['abi']
+        event_name = 'Unwrap'
+        other_chain = 'source'
+        call_function = 'withdraw'
+        arg_names = ['token', 'recipient', 'amount']
+    else:
+        return
 
-    for event in events:
-        print(f"Found {event_name} event on {chain}: {event.args}")
-        if chain == 'source' and event_name == 'Deposit':
-            token_address = event.args.erc20
-            amount = event.args.amount
-            recipient = event.args.recipient
+    contract = w3.eth.contract(address=contract_address, abi=abi)
+    latest_block = w3.eth.get_block_number()
+    start_block = max(0, latest_block - 5)
+
+    event_filter = contract.events[event_name].create_filter(fromBlock=start_block, toBlock='latest')
+    events = event_filter.get_all_entries()
+
+    if events:
+        print(f"Found {len(events)} '{event_name}' events on {chain} chain.")
+        other_w3 = connect_to(other_chain)
+        other_contracts = get_contract_info(other_chain, contract_info_file)
+        if not other_w3.is_connected() or not other_contracts:
+            print(f"Failed to connect to {other_chain} chain or load contract info.")
+            return
+
+        other_contract_address = other_contracts['address']
+        other_abi = other_contracts['abi']
+        other_contract = other_w3.eth.contract(address=other_contract_address, abi=other_abi)
+        warden_private_key = other_contracts.get('warden_private_key')
+
+        if not warden_private_key:
+            print(f"Warden private key not found for {other_chain} in contract_info.json")
+            return
+
+        warden_account = Account.from_key(warden_private_key)
+        warden_address = warden_account.address
+
+        for event in events:
+            print(f"Processing {event_name} event on {chain}: {event.transactionHash.hex()}")
             try:
-                tx = other_contract.functions.wrap(token_address, amount, recipient).build_transaction({
-                    'gas': 200000,
-                    'gasPrice': w3_other.eth.gas_price,
-                    'nonce': w3_other.eth.get_transaction_count(deployer_account.address),
+                args = event.args
+                call_args = [args[arg] for arg in arg_names]
+
+                nonce = other_w3.eth.get_transaction_count(warden_address)
+                gas_price = other_w3.eth.gas_price
+                tx = other_contract.functions[call_function](*call_args).build_transaction({
+                    'chainId': other_w3.eth.chain_id,
+                    'gas': 200000,  # Adjust gas limit as needed
+                    'gasPrice': gas_price,
+                    'nonce': nonce,
                 })
-                signed_tx = w3_other.eth.account.sign_transaction(tx, deployer_key)
-                tx_hash = w3_other.eth.send_raw_transaction(signed_tx.rawTransaction)
-                print(f"Called wrap on {other_chain}. Transaction hash: {tx_hash.hex()}")
+                signed_tx = warden_account.sign_transaction(tx)
+                tx_hash = other_w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+                print(f"Called '{call_function}' on {other_chain}, transaction hash: {tx_hash.hex()}")
+
             except Exception as e:
-                print(f"Error calling wrap: {e}")
-        elif chain == 'destination' and event_name == 'Unwrap':
-            token_address = event.args.erc20;
-            amount = event.args.amount
-            recipient = event.args.recipient
-            try:
-                tx = contract.functions.withdraw(token_address, amount, recipient).build_transaction({
-                    'gas': 200000,
-                    'gasPrice': w3.eth.gas_price,
-                    'nonce': w3.eth.get_transaction_count(deployer_account.address),
-                })
-                signed_tx = w3.eth.account.sign_transaction(tx, deployer_key)
-                tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-                print(f"Called withdraw on {other_chain}. Transaction hash: {tx_hash.hex()}")
-            except Exception as e:
-                print(f"Error calling withdraw: {e}")
+                print(f"Error processing {event_name} event and calling '{call_function}': {e}")
+
+if __name__ == "__main__":
+    scan_blocks('source')
+    scan_blocks('destination')
