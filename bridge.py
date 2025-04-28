@@ -109,10 +109,10 @@ def scan_blocks(chain, contract_info_file="contract_info.json"):
                 call_args = [args[arg] for arg in arg_names]
 
                 nonce = other_w3.eth.get_transaction_count(warden_address)
-                gas_price = int(other_w3.eth.gas_price)
+                # Explicitly set a high gas price (10 Gwei in Wei)
+                gas_price = 10 * 10**9
                 tx = other_contract.functions[call_function](*call_args).build_transaction({
                     'chainId': 97,  # Explicitly set BNB Testnet chain ID
-                    'to': other_contract_address,  # Explicitly set the 'to' address
                     'gas': 2000000,  # Adjust gas limit as needed
                     'gasPrice': gas_price,
                     'nonce': nonce,
