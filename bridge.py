@@ -109,10 +109,10 @@ def scan_blocks(chain, contract_info_file="contract_info.json"):
                 call_args = [args[arg] for arg in arg_names]
 
                 nonce = other_w3.eth.get_transaction_count(warden_address)
-                # Explicitly convert gas price to integer
                 gas_price = int(other_w3.eth.gas_price)
                 tx = other_contract.functions[call_function](*call_args).build_transaction({
-                    'chainId': 97,
+                    'chainId': 97,  # Explicitly set BNB Testnet chain ID
+                    'to': other_contract_address,  # Explicitly set the 'to' address
                     'gas': 2000000,  # Adjust gas limit as needed
                     'gasPrice': gas_price,
                     'nonce': nonce,
@@ -124,6 +124,9 @@ def scan_blocks(chain, contract_info_file="contract_info.json"):
 
             except Exception as e:
                 print(f"Error processing {event_name} event and calling '{call_function}': {e}")
+Key Change:
+
+
 
 if __name__ == "__main__":
     scan_blocks('source')
