@@ -124,9 +124,6 @@ def scan_blocks(chain, contract_info_file="contract_info.json"):
 
             except Exception as e:
                 print(f"Error processing {event_name} event and calling '{call_function}': {e}")
-Key Change:
-
-
 
 if __name__ == "__main__":
     scan_blocks('source')
