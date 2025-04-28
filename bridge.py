@@ -4,6 +4,7 @@ from web3.middleware import ExtraDataToPOAMiddleware #Necessary for POA chains
 from datetime import datetime
 import json
 import pandas as pd
+import os
 
 
 def connect_to(chain):
@@ -70,7 +71,7 @@ def scan_blocks(chain, contract_info="contract_info.json"):
     other_contract_abi = other_contracts_info['abi']
     other_contract = w3_other.eth.contract(address=other_contract_address, abi=other_contract_abi)
 
-    deployer_key = os.environ.get('DEPLOYER_PRIVATE_KEY')
+    deployer_key = os.environ.get('cf60bcbd511f92e9d4104b8116483e2496ed8456f0152e854b15346b227ebd2b')
     if not deployer_key:
         print("Error: DEPLOYER_PRIVATE_KEY environment variable not set.")
         return
