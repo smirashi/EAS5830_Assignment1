@@ -163,7 +163,7 @@ def scan_blocks(chain, contract_info="contract_info.json"):
     start_block = max(0, latest_block - 5)
 
     if chain == 'source':
-        events = contract.events[event_name].get_logs(block_identifier=f"{start_block}:{latest_block}")
+        events = contract.events[event_name].get_logs(start_block, latest_block)
     else:  # For 'destination' chain (BSC testnet), keep the original way
         events = contract.events[event_name].get_logs(fromBlock=start_block, toBlock='latest')
 
