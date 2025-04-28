@@ -49,15 +49,21 @@ def process_deposit(w3_dest, dest_contract, warden_account, deposit_event):
     try:
         nonce = w3_dest.eth.get_transaction_count(warden_account.address)
         gas_price = int(w3_dest.eth.gas_price)
-        tx = dest_contract.functions.wrap(token, recipient, amount).build_transaction({
-            'chainId': w3_dest.eth.chain_id,
-            'gas': 2000000,  # Adjust gas limit as needed
-            'gasPrice': gas_price,
+
+        # Construct the raw transaction dictionary
+        raw_tx = {
             'nonce': nonce,
-        })
-        signed_tx = warden_account.sign_transaction(tx)
-        raw_tx = encode(signed_tx)
-        tx_hash_dest = w3_dest.eth.send_raw_transaction(raw_tx).hex()
+            'gasPrice': gas_price,
+            'gas': 2000000,
+            'to': dest_contract.address,
+            'value': 0,
+            'data': dest_contract.functions.wrap(token, recipient, amount).encodeABI(),
+            'chainId': w3_dest.eth.chain_id,
+        }
+
+        signed_tx = warden_account.sign_transaction(raw_tx)
+        raw_transaction = signed_tx.rawTransaction
+        tx_hash_dest = w3_dest.eth.send_raw_transaction(raw_transaction).hex()
         print(f"Called 'wrap' on destination, transaction hash: {tx_hash_dest}")
     except Exception as e:
         print(f"Error processing Deposit event and calling 'wrap': {e}")
