@@ -118,17 +118,17 @@ def scan_blocks(chain, contract_info_file="contract_info.json"):
                     gas=2000000,
                     to=other_contract_address,
                     value=0,  # No Ether being sent
-                    data=other_contract.functions.wrap(*call_args).encodeABI(),
+                    data=other_contract.functions[call_function](*call_args).encodeABI(),
                     chainId=97,
                 )
 
                 signed_tx = warden_account.sign_transaction(raw_tx_dict)
                 raw_tx = encode(signed_tx)
                 tx_hash = other_w3.eth.send_raw_transaction(raw_tx)
-                print(f"Called 'wrap' on {other_chain}, transaction hash: {tx_hash.hex()}")
+                print(f"Called '{call_function}' on {other_chain}, transaction hash: {tx_hash.hex()}")
 
             except Exception as e:
-                print(f"Error processing {event_name} event and calling 'wrap': {e}")
+                print(f"Error processing {event_name} event and calling '{call_function}': {e}")
 
 if __name__ == "__main__":
     scan_blocks('source')
