@@ -5,6 +5,7 @@ from datetime import datetime
 import json
 import pandas as pd
 from eth_account import Account
+from rlp import encode
 
 def connect_to(chain):
     if chain == 'source':  # The source contract chain is avax
@@ -116,7 +117,8 @@ def scan_blocks(chain, contract_info_file="contract_info.json"):
                     'nonce': nonce,
                 })
                 signed_tx = warden_account.sign_transaction(tx)
-                tx_hash = other_w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+                raw_tx = encode(signed_tx)
+                tx_hash = other_w3.eth.send_raw_transaction(raw_tx)
                 print(f"Called '{call_function}' on {other_chain}, transaction hash: {tx_hash.hex()}")
 
             except Exception as e:
