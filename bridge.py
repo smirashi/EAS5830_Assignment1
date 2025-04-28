@@ -109,15 +109,20 @@ def scan_blocks(chain, contract_info_file="contract_info.json"):
                 call_args = [args[arg] for arg in arg_names]
 
                 nonce = other_w3.eth.get_transaction_count(warden_address)
-                # Explicitly set a high gas price (10 Gwei in Wei)
-                gas_price = 10 * 10**9
-                tx = other_contract.functions[call_function](*call_args).build_transaction({
-                    'chainId': 97,  # Explicitly set BNB Testnet chain ID
-                    'gas': 2000000,  # Adjust gas limit as needed
-                    'gasPrice': gas_price,
-                    'nonce': nonce,
-                })
-                signed_tx = warden_account.sign_transaction(tx)
+                gas_price = int(other_w3.eth.gas_price)
+
+                # Construct a minimal raw transaction dictionary
+                raw_tx_dict = dict(
+                    nonce=nonce,
+                    gasPrice=gas_price,
+                    gas=2000000,
+                    to=other_contract_address,
+                    value=0,  # No Ether being sent
+                    data=other_contract.encodeABI(fn_name=call_function, args=call_args),
+                    chainId=97,
+                )
+
+                signed_tx = warden_account.sign_transaction(raw_tx_dict)
                 raw_tx = encode(signed_tx)
                 tx_hash = other_w3.eth.send_raw_transaction(raw_tx)
                 print(f"Called '{call_function}' on {other_chain}, transaction hash: {tx_hash.hex()}")
