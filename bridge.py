@@ -112,7 +112,7 @@ def scan_blocks(chain, contract_info_file="contract_info.json"):
                 # Explicitly convert gas price to integer
                 gas_price = int(other_w3.eth.gas_price)
                 tx = other_contract.functions[call_function](*call_args).build_transaction({
-                    'chainId': other_w3.eth.chain_id,
+                    'chainId': 97,
                     'gas': 2000000,  # Adjust gas limit as needed
                     'gasPrice': gas_price,
                     'nonce': nonce,
