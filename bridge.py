@@ -78,8 +78,8 @@ def scan_blocks(chain, contract_info_file="contract_info.json"):
     latest_block = w3.eth.get_block_number()
     start_block = max(0, latest_block - 5)
 
-    event_filter = contract.events[event_name].create_filter()  # Create filter without block range
-    events = event_filter.get_logs({'fromBlock': start_block, 'toBlock': latest_block})
+    event_filter = contract.events[event_name].create_filter(from_block=start_block, to_block=latest_block)
+    events = event_filter.get_all_entries()
 
     if events:
         print(f"Found {len(events)} '{event_name}' events on {chain} chain (blocks {start_block} to {latest_block}).")
