@@ -116,7 +116,8 @@ def scan_blocks(chain, contract_info_file="contract_info.json"):
                     'nonce': nonce,
                 })
                 signed_tx = warden_account.sign_transaction(tx)
-                tx_hash = other_w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+                # Modified line to access raw transaction bytes
+                tx_hash = other_w3.eth.send_raw_transaction(signed_tx.raw)
                 print(f"Called '{call_function}' on {other_chain}, transaction hash: {tx_hash.hex()}")
 
             except Exception as e:
