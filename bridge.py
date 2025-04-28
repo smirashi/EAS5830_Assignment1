@@ -118,7 +118,7 @@ def scan_blocks(chain, contract_info_file="contract_info.json"):
                     gas=2000000,
                     to=other_contract_address,
                     value=0,  # No Ether being sent
-                    data=other_contract.functions.wrap(*call_args).encodeABI() if call_function == 'wrap' else other_contract.functions.withdraw(*call_args).encodeABI(),
+                    data=other_contract.functions[call_function](*call_args).encodeABI(),
                     chainId=97,
                 )
 
