@@ -35,68 +35,6 @@ def get_contract_info(chain, contract_info_file="contract_info.json"):
     return contracts[chain]
 
 
-def process_deposit(w3_dest, dest_contract, warden_account, deposit_event):
-    """
-    Processes a Deposit event by calling the wrap function on the destination chain.
-    """
-    token = deposit_event['args']['token']
-    recipient = deposit_event['args']['recipient']
-    amount = deposit_event['args']['amount']
-    tx_hash_source = deposit_event['transactionHash'].hex()
-
-    print(f"Processing Deposit event on source: {tx_hash_source}")
-
-    try:
-        nonce = w3_dest.eth.get_transaction_count(warden_account.address)
-        gas_price = int(w3_dest.eth.gas_price)
-
-        # Construct the raw transaction dictionary
-        raw_tx = {
-            'nonce': nonce,
-            'gasPrice': gas_price,
-            'gas': 2000000,
-            'to': dest_contract.address,
-            'value': 0,
-            'data': dest_contract.functions.wrap(token, recipient, amount).encodeABI(),
-            'chainId': w3_dest.eth.chain_id,
-        }
-
-        signed_tx = warden_account.sign_transaction(raw_tx)
-        raw_transaction = signed_tx.rawTransaction
-        tx_hash_dest = w3_dest.eth.send_raw_transaction(raw_transaction).hex()
-        print(f"Called 'wrap' on destination, transaction hash: {tx_hash_dest}")
-    except Exception as e:
-        print(f"Error processing Deposit event and calling 'wrap': {e}")
-
-
-def process_unwrap(w3_source, source_contract, warden_account, unwrap_event):
-    """
-    Processes an Unwrap event by calling the withdraw function on the source chain.
-    """
-    token = unwrap_event['args']['underlying_token']
-    recipient = unwrap_event['args']['to']
-    amount = unwrap_event['args']['amount']
-    tx_hash_dest = unwrap_event['transactionHash'].hex()
-
-    print(f"Processing Unwrap event on destination: {tx_hash_dest}")
-
-    try:
-        nonce = w3_source.eth.get_transaction_count(warden_account.address)
-        gas_price = int(w3_source.eth.gas_price)
-        tx = source_contract.functions.withdraw(token, recipient, amount).build_transaction({
-            'chainId': w3_source.eth.chain_id,
-            'gas': 2000000,  # Adjust gas limit as needed
-            'gasPrice': gas_price,
-            'nonce': nonce,
-        })
-        signed_tx = warden_account.sign_transaction(tx)
-        raw_tx = encode(signed_tx)
-        tx_hash_source = w3_source.eth.send_raw_transaction(raw_tx).hex()
-        print(f"Called 'withdraw' on source, transaction hash: {tx_hash_source}")
-    except Exception as e:
-        print(f"Error processing Unwrap event and calling 'withdraw': {e}")
-
-
 def scan_blocks(chain, contract_info_file="contract_info.json"):
     """
         chain - (string) should be either "source" or "destination"
@@ -122,11 +60,15 @@ def scan_blocks(chain, contract_info_file="contract_info.json"):
         abi = contracts['abi']
         event_name = 'Deposit'
         other_chain = 'destination'
+        call_function = 'wrap'
+        arg_names = ['token', 'recipient', 'amount']
     elif chain == 'destination':
         contract_address = contracts['address']
         abi = contracts['abi']
         event_name = 'Unwrap'
         other_chain = 'source'
+        call_function = 'withdraw'
+        arg_names = ['underlying_token', 'to', 'amount'] # Adjusted arg names for unwrap
     else:
         return
 
@@ -150,26 +92,59 @@ def scan_blocks(chain, contract_info_file="contract_info.json"):
         other_abi = other_contracts['abi']
         other_contract = other_w3.eth.contract(address=other_contract_address, abi=other_abi)
         warden_private_key = other_contracts.get('warden_private_key')
+        source_contracts = get_contract_info('source', contract_info_file)
+        source_warden_private_key = source_contracts.get('warden_private_key') if source_contracts else None
+        w3_source = connect_to('source') if other_chain == 'source' and source_contracts else None
+        source_contract_address_unwrap = source_contracts['address'] if other_chain == 'source' and source_contracts else None
+        source_abi_unwrap = source_contracts['abi'] if other_chain == 'source' and source_contracts else None
+        source_contract_unwrap = w3_source.eth.contract(address=source_contract_address_unwrap, abi=source_abi_unwrap) if w3_source and source_contract_address_unwrap and source_abi_unwrap else None
 
-        if not warden_private_key:
+
+        if not warden_private_key and other_chain == 'destination':
+            print(f"Warden private key not found for {other_chain} in contract_info.json")
+            return
+        if not source_warden_private_key and other_chain == 'source':
             print(f"Warden private key not found for {other_chain} in contract_info.json")
             return
 
-        warden_account = Account.from_key(warden_private_key)
+        warden_account_dest = Account.from_key(warden_private_key) if warden_private_key else None
+        warden_account_source = Account.from_key(source_warden_private_key) if source_warden_private_key else None
 
         for event in events:
-            if chain == 'source':
-                process_deposit(other_w3, other_contract, warden_account, event)
-            elif chain == 'destination':
-                source_contracts = get_contract_info('source', contract_info_file)
-                if source_contracts:
-                    w3_source = connect_to('source')
-                    source_contract_address = source_contracts['address']
-                    source_abi = source_contracts['abi']
-                    source_contract = w3_source.eth.contract(address=source_contract_address, abi=source_abi)
-                    process_unwrap(w3_source, source_contract, warden_account, event)
-                else:
-                    print("Could not load source contract info for processing Unwrap event.")
+            print(f"Processing {event_name} event on {chain}: {event.transactionHash.hex()}")
+            try:
+                args = event.args
+                call_args = [args[arg] for arg in arg_names]
+
+                if chain == 'source' and call_function == 'wrap' and warden_account_dest and other_contract:
+                    nonce = other_w3.eth.get_transaction_count(warden_account_dest.address)
+                    gas_price = int(other_w3.eth.gas_price)
+                    tx = other_contract.functions[call_function](*call_args).build_transaction({
+                        'chainId': other_w3.eth.chain_id,
+                        'gas': 2000000,  # Adjust gas limit as needed
+                        'gasPrice': gas_price,
+                        'nonce': nonce,
+                    })
+                    signed_tx = warden_account_dest.sign_transaction(tx)
+                    raw_tx = encode(signed_tx)
+                    tx_hash = other_w3.eth.send_raw_transaction(raw_tx).hex()
+                    print(f"Called '{call_function}' on {other_chain}, transaction hash: {tx_hash}")
+                elif chain == 'destination' and call_function == 'withdraw' and warden_account_source and source_contract_unwrap and w3_source:
+                    nonce = w3_source.eth.get_transaction_count(warden_account_source.address)
+                    gas_price = int(w3_source.eth.gas_price)
+                    tx = source_contract_unwrap.functions[call_function](*call_args).build_transaction({
+                        'chainId': w3_source.eth.chain_id,
+                        'gas': 2000000,  # Adjust gas limit as needed
+                        'gasPrice': gas_price,
+                        'nonce': nonce,
+                    })
+                    signed_tx = warden_account_source.sign_transaction(tx)
+                    raw_tx = encode(signed_tx)
+                    tx_hash = w3_source.eth.send_raw_transaction(raw_tx).hex()
+                    print(f"Called '{call_function}' on {other_chain}, transaction hash: {tx_hash}")
+
+            except Exception as e:
+                print(f"Error processing {event_name} event and calling '{call_function}': {e}")
 
 if __name__ == "__main__":
     scan_blocks('source')
