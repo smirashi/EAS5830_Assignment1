@@ -59,7 +59,7 @@ def scan_blocks(chain, contract_info="contract_info.json"):
                 nonce = dest_w3.eth.get_transaction_count(Web3.to_checksum_address(contracts['destination']['warden_address']))
                 txn = dest_contract.functions.wrap(token, recipient, amount).build_transaction({
                     'chainId': 97,  # BNB testnet
-                    'gas': 5000000,
+                    'gas': 50000,
                     'gasPrice': dest_w3.to_wei('10', 'gwei'),
                     'nonce': nonce,
                 })
@@ -92,7 +92,7 @@ def scan_blocks(chain, contract_info="contract_info.json"):
                 nonce = source_w3.eth.get_transaction_count(Web3.to_checksum_address(contracts['source']['warden_address']))
                 txn = source_contract.functions.withdraw(token, recipient, amount).build_transaction({
                     'chainId': 43113,  # Avalanche Fuji testnet
-                    'gas': 5000000,
+                    'gas': 50000,
                     'gasPrice': source_w3.to_wei('25', 'gwei'),
                     'nonce': nonce,
                 })
