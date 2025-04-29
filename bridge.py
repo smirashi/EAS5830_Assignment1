@@ -60,7 +60,7 @@ def scan_blocks(chain, contract_info="contract_info.json"):
                 txn = dest_contract.functions.wrap(token, recipient, amount).build_transaction({
                     'chainId': 97,  # BNB testnet
                     'gas': 50000,
-                    'gasPrice': dest_w3.to_wei('10', 'gwei'),
+                    'gasPrice': dest_w3.to_wei('12', 'gwei'),
                     'nonce': nonce,
                 })
 
